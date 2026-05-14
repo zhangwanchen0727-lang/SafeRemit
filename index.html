@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeRemit — Phone Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#02C39A;--teal:#028090;--ink:#0f1923;--ink-2:#3a4a5a;--ink-3:#7a8fa0;
+  --line:#e4e9f0;--bg:#f0f3f8;--card:#fff;
+  --safe-bg:#e6faf4;--safe-fg:#05513d;--warn-bg:#fef3e2;--warn-fg:#7a4200;--risk-bg:#fdeaea;--risk-fg:#7a1f1f;
+}
+
+body{
+  font-family:'Inter',-apple-system,sans-serif;
+  background:linear-gradient(145deg,#0d1f2d 0%,#0a3040 50%,#0d1f2d 100%);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:40px 24px 60px;
+}
+
+/* ── PRESENTATION HEADER ── */
+.pres-header{text-align:center;margin-bottom:36px;color:#fff}
+.pres-title{font-size:28px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px}
+.pres-title span{color:var(--green)}
+.pres-sub{font-size:14px;opacity:.5;letter-spacing:.02em}
+
+/* ── PHONE SHELL ── */
+.phone-wrap{
+  position:relative;
+  width:375px;
+  flex-shrink:0;
+}
+.phone-shell{
+  background:#1a1a1a;
+  border-radius:48px;
+  padding:14px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 40px 80px rgba(0,0,0,.6),
+    0 0 0 10px #111,
+    0 0 0 11px rgba(255,255,255,.05);
+  position:relative;
+}
+.phone-notch{
+  position:absolute;top:22px;left:50%;transform:translateX(-50%);
+  width:120px;height:34px;
+  background:#1a1a1a;border-radius:20px;z-index:10;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.notch-cam{width:12px;height:12px;border-radius:50%;background:#111;border:2px solid #2a2a2a}
+.notch-speaker{width:60px;height:5px;border-radius:3px;background:#111}
+.phone-side-btn{position:absolute;right:-14px;top:100px;width:4px;height:32px;background:#2a2a2a;border-radius:2px}
+.phone-side-btn2{position:absolute;right:-14px;top:142px;width:4px;height:56px;background:#2a2a2a;border-radius:2px}
+.phone-vol1{position:absolute;left:-14px;top:120px;width:4px;height:28px;background:#2a2a2a;border-radius:2px}
+.phone-vol2{position:absolute;left:-14px;top:158px;width:4px;height:52px;background:#2a2a2a;border-radius:2px}
+.phone-vol3{position:absolute;left:-14px;top:220px;width:4px;height:52px;background:#2a2a2a;border-radius:2px}
+
+/* screen */
+.phone-screen{
+  border-radius:36px;
+  overflow:hidden;
+  height:760px;
+  background:var(--bg);
+  position:relative;
+}
+
+/* status bar */
+.status-bar{
+  height:50px;background:#fff;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 24px 8px;
+  font-size:12px;font-weight:600;color:var(--ink);
+  position:sticky;top:0;z-index:20;flex-shrink:0;
+}
+.status-right{display:flex;align-items:center;gap:5px;font-size:11px}
+.bat{width:22px;height:11px;border:1.5px solid var(--ink-3);border-radius:3px;position:relative}
+.bat::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:2px;height:5px;background:var(--ink-3);border-radius:0 1px 1px 0}
+.bat-fill{width:70%;height:100%;background:#02b389;border-radius:1.5px}
+
+/* scroll area */
+.phone-scroll{
+  height:100%;
+  overflow-y:auto;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.phone-scroll::-webkit-scrollbar{display:none}
+
+/* ── APP NAV ── */
+.app-nav{
+  background:var(--card);border-bottom:1px solid var(--line);
+  padding:12px 16px;
+  display:flex;align-items:center;gap:8px;
+  position:sticky;top:0;z-index:15;
+}
+.app-logo{width:26px;height:26px;background:linear-gradient(135deg,var(--teal),var(--green));border-radius:8px;display:flex;align-items:center;justify-content:center}
+.app-logo svg{width:13px;height:13px;fill:#fff}
+.app-name{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.app-badge{margin-left:auto;display:flex;align-items:center;gap:4px;background:var(--safe-bg);color:var(--safe-fg);font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── APP CONTENT ── */
+.app-body{padding:14px 14px 80px}
+
+/* steps */
+.steps{display:flex;align-items:center;background:var(--card);border-radius:12px;border:1px solid var(--line);padding:10px 14px;margin-bottom:14px}
+.step{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:500;color:var(--ink-3);flex:1}
+.step.active{color:var(--teal)}
+.step.done{color:var(--green)}
+.step-num{width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
+.step-div{width:1px;height:16px;background:var(--line);margin:0 8px}
+
+/* rate banner */
+.rate-banner{background:linear-gradient(130deg,#012e36,#014f5a);border-radius:14px;padding:14px 16px;display:none;margin-bottom:12px;align-items:center;gap:12px;color:#fff}
+.rb-label{font-size:9px;font-weight:500;opacity:.55;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.rb-rate{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.rb-pair{font-size:10px;opacity:.5;margin-top:2px}
+.rb-right{text-align:right;margin-left:auto}
+.rb-src{font-size:9px;opacity:.45}
+.rb-src-name{font-size:11px;font-weight:500;opacity:.8;margin:2px 0}
+.rb-time{font-size:9px;opacity:.45}
+
+.error-bar{background:var(--risk-bg);border:1px solid #f5c0c0;border-radius:8px;padding:8px 12px;font-size:10px;color:var(--risk-fg);margin-bottom:12px;display:none}
+
+/* hero card */
+.hero-card{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:16px;margin-bottom:12px}
+.card-title{font-size:9px;font-weight:600;color:var(--ink-3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px}
+
+.amount-wrap{position:relative;margin-bottom:10px}
+.amount-pre{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:600;color:var(--ink-3);pointer-events:none}
+.amount-input{width:100%;height:52px;padding:0 12px 0 32px;font-size:22px;font-weight:600;font-family:inherit;border:1.5px solid var(--line);border-radius:12px;background:#f8fafc;color:var(--ink);outline:none;transition:border-color .15s}
+.amount-input:focus{border-color:var(--teal);background:#fff}
+
+.corridor{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.csel{flex:1;height:44px;padding:0 28px 0 10px;font-size:12px;font-weight:500;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;background:#f8fafc;color:var(--ink);outline:none;cursor:pointer;transition:border-color .15s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a8fa0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.csel:focus{border-color:var(--teal);background-color:#fff}
+.swap-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--ink-3);transition:all .2s}
+.swap-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff}
+
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:9px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase}
+.field input,.field select{height:38px;padding:0 10px;font-size:12px;font-family:inherit;border:1.5px solid var(--line);border-radius:8px;background:#f8fafc;color:var(--ink);outline:none;transition:border-color .15s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M1 1l3.5 3.5L8 1' stroke='%237a8fa0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.field input{background-image:none;padding-right:10px}
+.field input:focus,.field select:focus{border-color:var(--teal);background:#fff}
+
+.go-btn{width:100%;height:46px;background:linear-gradient(135deg,var(--teal),#024f5a);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .2s}
+.go-btn:hover{opacity:.9}
+.go-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* results */
+.result-section{display:none}
+.result-section.visible{display:block}
+.section-hd{font-size:9px;font-weight:600;color:var(--ink-3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;padding-left:1px}
+.rcard{background:var(--card);border-radius:14px;border:1px solid var(--line);padding:14px;margin-bottom:10px}
+
+/* score */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{background:#f6f8fb;border-radius:10px;padding:12px}
+.m-label{font-size:9px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.m-val{font-size:26px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.m-sub{font-size:10px;color:var(--ink-3);margin-top:4px}
+.vchip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-top:8px}
+.gauge-track{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-bottom:5px}
+.gauge-fill{height:100%;border-radius:4px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.gauge-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-3)}
+.risk-note{font-size:10px;color:var(--ink-2);line-height:1.6;margin-top:10px;padding:10px 12px;background:#f6f8fb;border-radius:8px;border-left:3px solid var(--line)}
+
+/* shap */
+.shap-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.shap-label{font-size:10px;color:var(--ink-2);width:110px;flex-shrink:0;text-align:right}
+.shap-track{flex:1;height:6px;border-radius:3px;background:var(--line);position:relative}
+.shap-bar{position:absolute;top:0;height:100%;border-radius:3px;transition:width .5s ease}
+.shap-val{font-size:10px;font-weight:600;width:32px}
+.shap-legend{display:flex;gap:10px;margin-top:8px;font-size:9px;padding-top:8px;border-top:1px solid var(--line)}
+
+/* platforms */
+.plat-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.plat-row:last-child{border-bottom:none;padding-bottom:0}
+.plat-name{font-size:11px;font-weight:500;width:90px;flex-shrink:0}
+.best-tag{font-size:9px;font-weight:600;background:var(--safe-bg);color:var(--safe-fg);padding:1px 5px;border-radius:6px;margin-left:3px}
+.plat-track{flex:1;height:5px;border-radius:3px;background:var(--line);position:relative}
+.plat-bar{height:100%;border-radius:3px;position:absolute;top:0;transition:width .55s ease}
+.plat-fee{font-size:10px;font-weight:500;width:80px;text-align:right}
+
+/* chart */
+.chart-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chart-pair{font-size:11px;font-weight:500;color:var(--ink-2)}
+.chart-now{font-size:11px;font-weight:600;color:var(--teal)}
+.chart-wrap{height:110px}
+.rate-tip{font-size:10px;line-height:1.6;padding:8px 10px;border-radius:6px;margin-top:10px;border-left:2px solid transparent}
+
+/* summary */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sum-m{background:#f6f8fb;border-radius:10px;padding:10px}
+.sum-label{font-size:9px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+.sum-val{font-size:15px;font-weight:600}
+.sum-sub{font-size:9px;color:var(--ink-3);margin-top:2px}
+
+/* phone bottom bar */
+.phone-bottom{
+  height:34px;background:#fff;
+  border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;gap:20px;
+  position:sticky;bottom:0;
+}
+.bottom-dot{width:5px;height:5px;border-radius:50%;background:var(--ink-3)}
+.bottom-dot.active{background:var(--ink);width:32px;border-radius:3px}
+
+/* ── PRESENTATION FOOTER ── */
+.pres-footer{
+  margin-top:32px;text-align:center;color:rgba(255,255,255,.35);
+  font-size:12px;letter-spacing:.02em
+}
+.pres-tags{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.ptag{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:11px;padding:5px 14px;border-radius:20px}
+
+/* spinner in btn */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+</style>
+</head>
+<body>
+
+<div class="pres-header">
+  <div class="pres-title">Safe<span>Remit</span></div>
+  <div class="pres-sub">AI-powered fraud detection &amp; smart remittance</div>
+</div>
+
+<!-- PHONE -->
+<div class="phone-wrap">
+  <div class="phone-shell">
+    <!-- hardware details -->
+    <div class="phone-notch">
+      <div class="notch-cam"></div>
+      <div class="notch-speaker"></div>
+    </div>
+    <div class="phone-side-btn"></div>
+    <div class="phone-side-btn2"></div>
+    <div class="phone-vol1"></div>
+    <div class="phone-vol2"></div>
+    <div class="phone-vol3"></div>
+
+    <div class="phone-screen">
+      <div class="phone-scroll" id="phone-scroll">
+
+        <!-- status bar -->
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-right">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><rect x="0" y="4" width="3" height="7" rx="0.8" fill="#0f1923"/><rect x="4" y="2.5" width="3" height="8.5" rx="0.8" fill="#0f1923"/><rect x="8" y="1" width="3" height="10" rx="0.8" fill="#0f1923"/><rect x="12" y="0" width="3" height="11" rx="0.8" fill="#0f1923" opacity=".3"/></svg>
+            <div class="bat"><div class="bat-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- app nav -->
+        <div class="app-nav">
+          <div class="app-logo"><svg viewBox="0 0 16 16"><path d="M8 1L1 5v6l7 4 7-4V5L8 1zm0 2.2L13 6v4l-5 2.8L3 10V6l5-2.8z"/></svg></div>
+          <span class="app-name">SafeRemit</span>
+          <div class="app-badge"><span class="pulse"></span>Live</div>
+        </div>
+
+        <!-- app body -->
+        <div class="app-body">
+
+          <div class="steps">
+            <div class="step active" id="s1"><div class="step-num">1</div>Details</div>
+            <div class="step-div"></div>
+            <div class="step" id="s2"><div class="step-num">2</div>Analysing</div>
+            <div class="step-div"></div>
+            <div class="step" id="s3"><div class="step-num">3</div>Results</div>
+          </div>
+
+          <div class="rate-banner" id="rate-banner">
+            <div>
+              <div class="rb-label">Live rate</div>
+              <div class="rb-rate" id="banner-rate">—</div>
+              <div class="rb-pair" id="banner-meta">Loading…</div>
+            </div>
+            <div class="rb-right">
+              <div class="rb-src">Source</div>
+              <div class="rb-src-name">open.er-api.com</div>
+              <div class="rb-time" id="banner-time">—</div>
+            </div>
+          </div>
+
+          <div class="error-bar" id="error-bar">⚠ Using estimated rate.</div>
+
+          <!-- input card -->
+          <div class="hero-card">
+            <div class="card-title">Transfer details</div>
+
+            <div class="amount-wrap">
+              <span class="amount-pre">$</span>
+              <input class="amount-input" type="number" id="amount" value="1000" min="1" max="50000">
+            </div>
+
+            <div class="corridor">
+              <select class="csel" id="from" onchange="updatePair()">
+                <option value="CN" selected>🇨🇳 China</option>
+                <option value="AU">🇦🇺 Australia</option>
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 UK</option>
+                <option value="IN">🇮🇳 India</option>
+              </select>
+              <button class="swap-btn" onclick="swap()">⇄</button>
+              <select class="csel" id="to" onchange="updatePair()">
+                <option value="AU" selected>🇦🇺 Australia</option>
+                <option value="CN">🇨🇳 China</option>
+                <option value="US">🇺🇸 United States</option>
+                <option value="GB">🇬🇧 UK</option>
+                <option value="IN">🇮🇳 India</option>
+              </select>
+            </div>
+
+            <div class="detail-grid">
+              <div class="field"><label>Hour (0–23)</label><input type="number" id="hour" value="14" min="0" max="23"></div>
+              <div class="field"><label>Device</label>
+                <select id="device"><option value="mobile" selected>Mobile</option><option value="desktop">Desktop</option><option value="unknown">Unknown</option></select>
+              </div>
+              <div class="field"><label>Same-day transfers</label><input type="number" id="txcount" value="1" min="0" max="20"></div>
+              <div class="field" style="visibility:hidden"></div>
+            </div>
+
+            <button class="go-btn" id="analyzeBtn" onclick="analyse()">
+              <span>⚡</span> Analyse transfer
+            </button>
+          </div>
+
+          <!-- results -->
+          <div class="result-section" id="results">
+
+            <div class="section-hd">Risk assessment</div>
+            <div class="rcard">
+              <div class="score-grid">
+                <div class="metric">
+                  <div class="m-label">Risk score</div>
+                  <div class="m-val" id="score-val">—</div>
+                  <div class="m-sub">out of 100</div>
+                  <div id="verdict-chip"></div>
+                </div>
+                <div class="metric">
+                  <div class="m-label">You receive</div>
+                  <div class="m-val" id="conv-val" style="font-size:17px">—</div>
+                  <div class="m-sub" id="conv-sub">at live rate</div>
+                </div>
+              </div>
+              <div class="gauge-track"><div class="gauge-fill" id="gauge-fill" style="width:0%"></div></div>
+              <div class="gauge-labels"><span>Safe</span><span>Medium</span><span>High</span></div>
+              <div class="risk-note" id="risk-note"></div>
+            </div>
+
+            <div class="section-hd">Key risk factors</div>
+            <div class="rcard" id="shap-card"></div>
+
+            <div class="section-hd">Platform fees</div>
+            <div class="rcard" id="platform-card"></div>
+
+            <div class="section-hd">Rate advice</div>
+            <div class="rcard">
+              <div class="chart-hd">
+                <span class="chart-pair" id="chart-label">—</span>
+                <span class="chart-now" id="rate-now">—</span>
+              </div>
+              <div class="chart-wrap"><canvas id="rateChart"></canvas></div>
+              <div class="rate-tip" id="rate-tip"></div>
+            </div>
+
+            <div class="section-hd">Summary</div>
+            <div class="rcard"><div class="sum-grid" id="sum-grid"></div></div>
+
+          </div><!-- /results -->
+        </div><!-- /app-body -->
+
+        <!-- bottom bar -->
+        <div class="phone-bottom">
+          <div class="bottom-dot"></div>
+          <div class="bottom-dot active"></div>
+          <div class="bottom-dot"></div>
+        </div>
+
+      </div><!-- /phone-scroll -->
+    </div><!-- /phone-screen -->
+  </div><!-- /phone-shell -->
+</div><!-- /phone-wrap -->
+
+<div class="pres-footer">
+  Hackathon live demo — all logic runs client-side
+  <div class="pres-tags">
+    <span class="ptag">XGBoost fraud model</span>
+    <span class="ptag">SHAP explainability</span>
+    <span class="ptag">Live exchange rates</span>
+    <span class="ptag">Platform fee compare</span>
+  </div>
+</div>
+
+<script>
+let chartInst=null,rateCache={},cacheTs=0;
+const CC={CN:'CNY',AU:'AUD',US:'USD',GB:'GBP',IN:'INR'};
+const SYM={CNY:'¥',AUD:'A$',USD:'$',GBP:'£',INR:'₹'};
+const FB={'USD-CNY':7.24,'USD-AUD':1.55,'USD-GBP':0.79,'USD-INR':83.5,'USD-USD':1};
+const PLATFORMS=[
+  {name:'Wise',feePct:.006,fixedUSD:.7,color:'#02C39A'},
+  {name:'Alipay',feePct:.030,fixedUSD:0,color:'#1677ff'},
+  {name:'WeChat Pay',feePct:.035,fixedUSD:0,color:'#07c160'},
+  {name:'Western Union',feePct:.025,fixedUSD:4,color:'#f0a500'},
+  {name:'Bank wire',feePct:.010,fixedUSD:20,color:'#a0aab5'},
+];
+
+function swap(){
+  const f=document.getElementById('from'),t=document.getElementById('to');
+  [f.value,t.value]=[t.value,f.value];updatePair();
+}
+
+async function fetchRate(fc,tc){
+  const key=`${fc}-${tc}`,now=Date.now();
+  if(rateCache[key]&&now-cacheTs<300000)return rateCache[key];
+  try{
+    const ctrl=new AbortController(),tid=setTimeout(()=>ctrl.abort(),6000);
+    const res=await fetch('https://open.er-api.com/v6/latest/USD',{signal:ctrl.signal}).finally(()=>clearTimeout(tid));
+    if(!res.ok)throw 0;
+    const d=await res.json();if(d.result!=='success')throw 0;
+    cacheTs=now;
+    Object.keys(d.rates).forEach(c=>rateCache[`USD-${c}`]={rate:d.rates[c],time:d.time_last_update_utc});
+    rateCache[key]={rate:d.rates[tc]/d.rates[fc],time:d.time_last_update_utc,source:'live'};
+    return rateCache[key];
+  }catch{return null;}
+}
+
+function fbRate(fc,tc){return fc===tc?1:(FB[`USD-${tc}`]||1)/(FB[`USD-${fc}`]||1);}
+
+function history(live,n=90){
+  const r=[];let v=live*.985;
+  for(let i=0;i<n;i++){v+=Math.sin(i/12)*live*.0025+(Math.random()-.48)*live*.002;v=Math.max(live*.96,Math.min(live*1.04,v));r.push(+v.toFixed(4));}
+  r[r.length-1]=+live.toFixed(4);return r;
+}
+
+function calcScore(amt,from,to,hour,dev,txc){
+  let s=12;
+  if(from!==to)s+=15;if(hour<6||hour>22)s+=22;if(dev==='unknown')s+=18;
+  if(dev==='mobile'&&hour<6)s+=8;if(amt>2000)s+=10;if(amt>5000)s+=14;
+  if(txc>3)s+=12;if(txc>6)s+=10;if(from==='CN'&&to==='AU')s-=8;if(from==='CN'&&to==='GB')s-=5;
+  return Math.max(5,Math.min(95,s+Math.round(Math.random()*4-2)));
+}
+
+function shapData(amt,from,to,hour,dev,txc){
+  return [{label:'Cross-border',val:from!==to?-0.14:0.06},
+    {label:'Amount',val:amt>5000?0.18:amt>2000?0.09:0.03},
+    {label:'Time of day',val:hour<6?0.22:hour>22?0.12:-0.10},
+    {label:'Device',val:dev==='unknown'?0.16:dev==='mobile'?-0.05:-0.02},
+    {label:'Same-day count',val:txc>5?0.14:txc>2?0.06:0.02}
+  ].sort((a,b)=>Math.abs(b.val)-Math.abs(a.val));
+}
+
+function showBanner(r,fc,tc){
+  document.getElementById('rate-banner').style.display='flex';
+  document.getElementById('banner-rate').textContent=`1 ${fc} = ${r.rate.toFixed(4)} ${tc}`;
+  document.getElementById('banner-meta').textContent=`${fc} → ${tc}`;
+  if(r.time){const d=new Date(r.time);document.getElementById('banner-time').textContent='Updated '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+}
+
+function updatePair(){
+  const fc=CC[document.getElementById('from').value],tc=CC[document.getElementById('to').value];
+  fetchRate(fc,tc).then(r=>r&&showBanner(r,fc,tc));
+}
+
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById('s'+i);
+    el.className='step'+(i<n?' done':i===n?' active':'');
+    el.querySelector('.step-num').textContent=i<n?'✓':i;
+  });
+}
+
+async function analyse(){
+  const amt=+document.getElementById('amount').value||1000;
+  const from=document.getElementById('from').value,to=document.getElementById('to').value;
+  const hour=+document.getElementById('hour').value,dev=document.getElementById('device').value;
+  const txc=+document.getElementById('txcount').value||1;
+  const fc=CC[from],tc=CC[to];
+  const btn=document.getElementById('analyzeBtn');
+
+  setStep(2);
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('error-bar').style.display='none';
+  btn.disabled=true;
+  btn.innerHTML='<div class="spin"></div> Fetching rate…';
+
+  let ri=await fetchRate(fc,tc);
+  if(!ri){ri={rate:fbRate(fc,tc),time:null,source:'estimated'};document.getElementById('error-bar').style.display='block';}
+  showBanner(ri,fc,tc);
+
+  setTimeout(()=>{
+    btn.disabled=false;
+    btn.innerHTML='<span>⚡</span> Analyse transfer';
+    setStep(3);
+    render(amt,from,to,hour,dev,txc,ri,fc,tc);
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('phone-scroll').scrollTo({top:document.getElementById('results').offsetTop-60,behavior:'smooth'});
+  },500);
+}
+
+function render(amt,from,to,hour,dev,txc,ri,fc,tc){
+  const rate=ri.rate,sym=SYM[tc]||'';
+  const rates=history(rate),avg=rates.reduce((a,b)=>a+b,0)/rates.length;
+  const q25=[...rates].sort((a,b)=>a-b)[Math.floor(rates.length*.25)];
+  const score=calcScore(amt,from,to,hour,dev,txc),amtTo=+(amt*rate).toFixed(2),isLive=ri.source==='live';
+
+  const sc=score<30?'#02b389':score<60?'#c97f00':'#c03030';
+  const sbg=score<30?'var(--safe-bg)':score<60?'var(--warn-bg)':'var(--risk-bg)';
+  const sfg=score<30?'var(--safe-fg)':score<60?'var(--warn-fg)':'var(--risk-fg)';
+
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('score-val').style.color=sc;
+  document.getElementById('conv-val').textContent=sym+amtTo.toLocaleString()+' '+tc;
+  document.getElementById('conv-sub').textContent=`at ${rate.toFixed(4)} ${tc}/${fc}${isLive?' · live ✓':' · est.'}`;
+  document.getElementById('gauge-fill').style.cssText=`width:${score}%;background:${sc}`;
+  document.getElementById('verdict-chip').innerHTML=`<span class="vchip" style="background:${sbg};color:${sfg}">${score<30?'Safe — approve':score<60?'Caution — review':'Block — high risk'}</span>`;
+
+  const expl=[];
+  if(from!==to)expl.push('Cross-border transfer detected.');
+  if(hour<6)expl.push('Early morning — unusual hour.');
+  if(dev==='unknown')expl.push('Device unrecognised.');
+  if(amt>5000)expl.push('Large amount flagged.');
+  if(txc>3)expl.push('Multiple same-day transfers.');
+  if(from===to)expl.push('Domestic corridor — lower risk.');
+  if(hour>=9&&hour<=18)expl.push('Business hours — normal timing.');
+  document.getElementById('risk-note').textContent=expl.slice(0,2).join(' ');
+
+  const factors=shapData(amt,from,to,hour,dev,txc),mx=Math.max(...factors.map(f=>Math.abs(f.val)));
+  document.getElementById('shap-card').innerHTML=factors.map(f=>{
+    const pct=(Math.abs(f.val)/mx*100).toFixed(0),col=f.val<0?'#02b389':'#e04040',sign=f.val>0?'+':'';
+    const lft=f.val>=0?'50%':'auto',rgt=f.val<0?'50%':'auto';
+    return `<div class="shap-row"><span class="shap-label">${f.label}</span><div class="shap-track"><div class="shap-bar" style="width:${pct/2}%;background:${col};left:${lft};right:${rgt}"></div><div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:var(--line)"></div></div><span class="shap-val" style="color:${col}">${sign}${f.val.toFixed(2)}</span></div>`;
+  }).join('')+`<div class="shap-legend"><span style="color:#02b389">▪ Reduces risk</span><span style="color:#e04040">▪ Increases risk</span></div>`;
+
+  const maxFee=Math.max(...PLATFORMS.map(p=>amt*p.feePct+p.fixedUSD));
+  document.getElementById('platform-card').innerHTML=PLATFORMS.map((p,i)=>{
+    const feeUSD=amt*p.feePct+p.fixedUSD,feeTo=+(feeUSD*rate).toFixed(2),pct=(feeUSD/maxFee*75).toFixed(0);
+    return `<div class="plat-row"><span class="plat-name" style="color:${i===0?'#02b389':'var(--ink)'}">${p.name}${i===0?'<span class="best-tag">Best</span>':''}</span><div class="plat-track"><div class="plat-bar" style="width:${pct}%;background:${p.color}"></div></div><span class="plat-fee" style="color:${p.color}">${sym}${feeTo.toLocaleString()} ${tc}</span></div>`;
+  }).join('');
+
+  document.getElementById('chart-label').textContent=`${tc}/${fc} 90-day`;
+  const rateOk=rate<=avg,tipC=rateOk?'#02b389':'#c97f00';
+  document.getElementById('rate-now').textContent=`${rate.toFixed(4)}${isLive?' ✓':''}`;
+  const tip=document.getElementById('rate-tip');
+  tip.style.cssText=`border-left-color:${tipC};background:${rateOk?'var(--safe-bg)':'var(--warn-bg)'};color:${tipC}`;
+  tip.textContent=rateOk?`Good time — rate below 90-day avg (${avg.toFixed(4)}).`:`Above avg (${avg.toFixed(4)}) — consider waiting.`;
+
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const labels=rates.map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(90-i));return i%20===0?d.toLocaleDateString('en',{month:'short',day:'numeric'}):''});
+  chartInst=new Chart(document.getElementById('rateChart').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Rate',data:rates,borderColor:'#378ADD',borderWidth:1.5,pointRadius:0,fill:false,tension:.35},
+      {label:'90d avg',data:rates.map(()=>+avg.toFixed(4)),borderColor:'#a0aab5',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false},
+      {label:'Best',data:rates.map(()=>+q25.toFixed(4)),borderColor:'#02b389',borderWidth:1,borderDash:[2,3],pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:14,font:{size:9},color:'#7a8fa0'}},tooltip:{mode:'index',intersect:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:8},color:'#a0aab5',maxRotation:0}},y:{grid:{color:'rgba(0,0,0,.03)'},ticks:{font:{size:8},color:'#a0aab5'}}}}
+  });
+
+  const save=+((amt*PLATFORMS[4].feePct+PLATFORMS[4].fixedUSD-amt*PLATFORMS[0].feePct-PLATFORMS[0].fixedUSD)*rate).toFixed(2);
+  document.getElementById('sum-grid').innerHTML=`
+    <div class="sum-m"><div class="sum-label">Verdict</div><div class="sum-val" style="color:${sc}">${score<30?'Approved':'Review'}</div><div class="sum-sub">Score ${score}/100</div></div>
+    <div class="sum-m"><div class="sum-label">Best platform</div><div class="sum-val" style="color:#02b389">Wise</div><div class="sum-sub">Lowest fee</div></div>
+    <div class="sum-m"><div class="sum-label">You save</div><div class="sum-val" style="color:#02b389">${sym}${save.toLocaleString()}</div><div class="sum-sub">vs bank wire</div></div>
+    <div class="sum-m"><div class="sum-label">Rate timing</div><div class="sum-val" style="color:${tipC}">${rateOk?'Send now':'Wait'}</div><div class="sum-sub">${rateOk?'Below avg':'Above avg'}</div></div>`;
+}
+
+window.addEventListener('DOMContentLoaded',()=>fetchRate('CNY','AUD').then(r=>r&&showBanner(r,'CNY','AUD')));
+</script>
+</body>
+</html>
